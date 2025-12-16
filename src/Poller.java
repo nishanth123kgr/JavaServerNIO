@@ -70,9 +70,9 @@ public class Poller implements Runnable {
                     }
 
                     if (key.isWritable()) {
-                        handleWritable(wrapper, key);
+                        handleWritable(wrapper);
                     }
-                } catch (CancelledKeyException cke) {
+                } catch (CancelledKeyException ignored) {
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }
@@ -157,12 +157,12 @@ public class Poller implements Runnable {
     public void register(SocketWrapper socketWrapper, int ops) {
         PollerEvent event = createPollerEvent(socketWrapper, ops);
         events.offer(event);
-        if (wakeupCounter.incrementAndGet() == 0) {
+        if (wakeupCounter.incrementAndGet() > 0) {
             selector.wakeup();
         }
     }
 
-    private void handleWritable(SocketWrapper wrapper, SelectionKey key) throws IOException {
+    private void handleWritable(SocketWrapper wrapper) throws IOException {
         SocketChannel ch = wrapper.getChannel();
 
         Queue<ByteBuffer> q = wrapper.getResponseOutputQueue();
