@@ -1,3 +1,10 @@
+package com.server.transport;
+
+import com.server.Constants;
+import com.server.utils.BufferCache;
+import com.server.utils.SynchronizedQueue;
+import com.server.utils.SynchronizedStack;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
@@ -65,7 +72,7 @@ public class Poller implements Runnable {
                     if (key.isReadable()) {
                         wrapper.setKey(key);
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
-                        SocketProcessor socketProcessor = new SocketProcessor(wrapper, this);
+                        SocketProcessor socketProcessor = ProcessorFactory.create(wrapper, this);
                         server.getExecutor().submit(socketProcessor);
                     }
 
@@ -177,9 +184,9 @@ public class Poller implements Runnable {
                 break;
             } else {
                 buf.clear();
-                
-                if (buf.capacity() == SocketProcessor.KB_64) {
-                    SocketProcessor.bufferCache.push(buf);
+
+                if (buf.capacity() == Constants.KB_64) {
+                    BufferCache.putBufferInCache(buf);
                 }
 
                 q.poll();

@@ -1,3 +1,5 @@
+package com.server.transport;
+
 public class PollerEvent {
 
     SocketWrapper socketWrapper;
@@ -18,6 +20,6 @@ public class PollerEvent {
 
     @Override
     public String toString() {
-        return "PollerEvent " + socketWrapper + " interestOps " + interestOps;
+        return "com.server.transport.PollerEvent " + socketWrapper + " interestOps " + interestOps;
     }
 }

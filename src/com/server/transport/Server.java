@@ -1,3 +1,5 @@
+package com.server.transport;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -13,7 +15,7 @@ public class Server {
 
     private final Poller[] pollers;
 
-    Server(int port, int pollerCount) {
+    public Server(int port, int pollerCount) {
         this.PORT = port;
         this.pollerCount = pollerCount;
         pollers = new Poller[pollerCount];
@@ -29,14 +31,14 @@ public class Server {
 
         for (int i = 0; i < pollerCount; i++) {
             Poller poller = new Poller(this);
-            Thread thread = new Thread(poller, "Poller " + (i + 1));
+            Thread thread = new Thread(poller, "com.server.transport.Poller " + (i + 1));
             thread.start();
             pollers[i] = poller;
         }
 
         Acceptor acceptor = new Acceptor(this);
 
-        Thread acceptorThread = new Thread(acceptor, "Acceptor");
+        Thread acceptorThread = new Thread(acceptor, "com.server.transport.Acceptor");
 
         acceptorThread.start();
 

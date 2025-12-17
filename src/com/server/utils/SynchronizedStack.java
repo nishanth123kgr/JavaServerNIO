@@ -1,4 +1,4 @@
-
+package com.server.utils;
 
 public class SynchronizedStack<T> {
     public static final int DEFAULT_SIZE = 128;
