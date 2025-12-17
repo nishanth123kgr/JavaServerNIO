@@ -1,7 +1,7 @@
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class SocketWrapper {
 
@@ -10,7 +10,7 @@ public class SocketWrapper {
 
     private SelectionKey key;
 
-    private final ConcurrentLinkedQueue<ByteBuffer> responseOutputQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedDeque<ByteBuffer> responseOutputQueue = new ConcurrentLinkedDeque<>();
 
 
     SocketWrapper(SocketChannel channel) {
@@ -25,7 +25,7 @@ public class SocketWrapper {
         return readBuffer;
     }
 
-    public ConcurrentLinkedQueue<ByteBuffer> getResponseOutputQueue() {
+    public ConcurrentLinkedDeque<ByteBuffer> getResponseOutputQueue() {
         return responseOutputQueue;
     }
 

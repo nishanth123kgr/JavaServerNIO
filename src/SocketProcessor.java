@@ -1,15 +1,24 @@
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
 
 public class SocketProcessor implements Runnable {
 
+    static int KB_64 = 6 * 1024;
+
     final SocketWrapper socketWrapper;
 
-    private Poller poller;
+    private final Poller poller;
 
     SocketProcessor(SocketWrapper wrapper, Poller poller) {
         this.socketWrapper = wrapper;
@@ -93,37 +102,52 @@ public class SocketProcessor implements Runnable {
         return queryParams;
     }
 
-    private ByteBuffer buildHttpResponse(int statusCode, String reason, String contentType, byte[] body) {
-        String responseString = "HTTP/1.1 " + statusCode + " " + reason + "\r\n" + "Content-Type: " + contentType + "\r\n" + "Content-Length: " + body.length + "\r\n" + "Connection: close\r\n" + "\r\n";
+    private void buildHttpResponse(SocketWrapper socketWrapper, int statusCode, String reason, ConcurrentLinkedDeque<ByteBuffer> responseBuffers) {
+
+        ByteBuffer lastBuffer = responseBuffers.getLast();
+        int bodyLength = (responseBuffers.size() - 1) * KB_64 + (lastBuffer.capacity() - lastBuffer.remaining());
+
+        String responseString = "HTTP/1.1 " + statusCode + " " + reason + "\r\n" + "Content-Type: text/html; charset=utf-8" + "\r\n" + "Content-Length: " + bodyLength + "\r\n" + "Connection: close\r\n" + "\r\n";
 
         byte[] headerBytes = responseString.getBytes(StandardCharsets.US_ASCII);
-        ByteBuffer buffer = ByteBuffer.allocate(headerBytes.length + body.length);
-        buffer.put(headerBytes);
-        buffer.put(body);
-        buffer.flip();
-        return buffer;
+        ByteBuffer headerBuffer = ByteBuffer.allocate(headerBytes.length).put(headerBytes);
+        headerBuffer.flip();
+        ConcurrentLinkedDeque<ByteBuffer> responseQueue = socketWrapper.getResponseOutputQueue();
+
+        responseQueue.add(headerBuffer);
+
+        for (ByteBuffer response : responseBuffers) {
+            response.flip();
+            responseQueue.add(response);
+        }
+
+
     }
 
     void closeConnection() {
         poller.register(socketWrapper, -1);
     }
 
+
     @Override
     public void run() {
         if (readSocket()) {
             Map<String, String> queryParams = readQueryParamsFromRequestLines();
 
-            ByteBuffer buffer;
+            ConcurrentLinkedDeque<ByteBuffer> responseBytesQueue = new ConcurrentLinkedDeque<>();
+
+            String message;
+            int statusCode;
 
             if (queryParams != null) {
 
-                String responseBody, message;
-                int statusCode;
+                String responseBody;
                 if (queryParams.containsKey("name")) {
                     responseBody = "<h3>Hello <i>" + queryParams.get("name") + "</i></h3><br><br>";
                     message = "OK";
                     statusCode = 200;
                 } else {
+
                     responseBody = "<h4>No Name Found<h4><br><br>";
                     message = "Not Found";
                     statusCode = 404;
@@ -132,12 +156,40 @@ public class SocketProcessor implements Runnable {
 
                 byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
 
-                buffer = buildHttpResponse(statusCode, message, "text/html; charset=utf-8", responseBytes);
+                responseBytesQueue.add(ByteBuffer.allocate(responseBytes.length).put(responseBytes));
+
+
             } else {
-                buffer = buildHttpResponse(400, "Bad Request", "text/html; charset=utf-8", "Invalid Request".getBytes(StandardCharsets.UTF_8));
+
+                Path indexPath = Paths.get(System.getProperty("user.dir"), "static", "index.html");
+                try (AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(indexPath, StandardOpenOption.READ)) {
+
+
+                    int totalBytesRead = 0, bytesRead;
+                    do {
+                        ByteBuffer dataBuffer = ByteBuffer.allocate(KB_64);
+                        bytesRead = fileChannel.read(dataBuffer, totalBytesRead).get();
+                        totalBytesRead += bytesRead;
+
+                        if (bytesRead > 0) {
+                            responseBytesQueue.add(dataBuffer);
+                        }
+
+
+                    } while (bytesRead > 0);
+
+
+                } catch (IOException | InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+
+
+                message = "OK";
+                statusCode = 200;
+
             }
 
-            socketWrapper.getResponseOutputQueue().add(buffer);
+            buildHttpResponse(socketWrapper, statusCode, message, responseBytesQueue);
             poller.register(socketWrapper, SelectionKey.OP_WRITE);
 
 
