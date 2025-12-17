@@ -14,6 +14,8 @@ import java.util.concurrent.ExecutionException;
 
 public class SocketProcessor implements Runnable {
 
+    static SynchronizedStack<ByteBuffer> bufferCache = new SynchronizedStack<>();
+
     static int KB_64 = 6 * 1024;
 
     final SocketWrapper socketWrapper;
@@ -167,7 +169,12 @@ public class SocketProcessor implements Runnable {
 
                     int totalBytesRead = 0, bytesRead;
                     do {
-                        ByteBuffer dataBuffer = ByteBuffer.allocate(KB_64);
+                        ByteBuffer dataBuffer = bufferCache.pop();
+
+                        if (dataBuffer == null) {
+                            dataBuffer = ByteBuffer.allocate(KB_64);
+                        }
+
                         bytesRead = fileChannel.read(dataBuffer, totalBytesRead).get();
                         totalBytesRead += bytesRead;
 

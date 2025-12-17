@@ -172,11 +172,20 @@ public class Poller implements Runnable {
 
             ch.write(buf);
 
+
             if (buf.hasRemaining()) {
                 break;
             } else {
+                buf.clear();
+                
+                if (buf.capacity() == SocketProcessor.KB_64) {
+                    SocketProcessor.bufferCache.push(buf);
+                }
+
                 q.poll();
             }
+
+
         }
 
         if (q.isEmpty()) {
