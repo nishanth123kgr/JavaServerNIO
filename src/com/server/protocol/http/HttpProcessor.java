@@ -25,8 +25,7 @@ public class HttpProcessor extends SocketProcessor {
     }
 
     @Override
-    protected void processRequest(SocketWrapper socketWrapper, ByteBuffer readBuffer) {
-
+    protected void process() {
 
         Map<String, String> queryParams = readQueryParamsFromRequestLines();
 
@@ -105,11 +104,11 @@ public class HttpProcessor extends SocketProcessor {
         String requestString = new String(data, StandardCharsets.UTF_8);
 
         System.out.println("-------------------------------------------");
-        System.out.println("-------------Request Received--------------");
+        System.out.println("-------------HttpRequest Received--------------");
         System.out.println("-------------------------------------------");
         System.out.println(requestString);
         System.out.println("-------------------------------------------");
-        System.out.println("--------------Parsing Request--------------");
+        System.out.println("--------------Parsing HttpRequest--------------");
         System.out.println("-------------------------------------------");
 
         String[] requestLines = requestString.split("\r\n");

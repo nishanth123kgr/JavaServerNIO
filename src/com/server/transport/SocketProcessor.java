@@ -1,5 +1,8 @@
 package com.server.transport;
 
+import com.server.protocol.Parser;
+import com.server.protocol.ResponseBuilder;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -43,18 +46,22 @@ public abstract class SocketProcessor implements Runnable {
 
     }
 
-    protected abstract void processRequest(SocketWrapper socketWrapper, ByteBuffer readBuffer);
-
-
     void closeConnection() {
         poller.register(socketWrapper, -1);
     }
+
+    protected abstract void process();
 
 
     @Override
     public void run() {
         if (readSocket()) {
-            processRequest(socketWrapper, socketWrapper.getReadBuffer());
+            Parser parser = new Parser();
+            parser.parse();
+            process();
+            ResponseBuilder builder = new ResponseBuilder();
+            builder.build(socketWrapper.getResponseOutputQueue());
+
             poller.register(socketWrapper, SelectionKey.OP_WRITE);
         } else {
             closeConnection();
