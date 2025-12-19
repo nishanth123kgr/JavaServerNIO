@@ -1,13 +1,14 @@
 package com.server.transport;
 
-import com.server.protocol.Parser;
-import com.server.protocol.ResponseBuilder;
+import com.server.protocol.*;
+import com.server.protocol.http.HttpParser;
+import com.server.protocol.http.HttpRequestProcessor;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-public abstract class SocketProcessor implements Runnable {
+public class SocketProcessor implements Runnable {
 
     protected final SocketWrapper socketWrapper;
 
@@ -50,15 +51,16 @@ public abstract class SocketProcessor implements Runnable {
         poller.register(socketWrapper, -1);
     }
 
-    protected abstract void process();
-
 
     @Override
     public void run() {
         if (readSocket()) {
-            Parser parser = new Parser();
-            parser.parse();
-            process();
+            Response response = null;
+            Parser parser = new HttpParser();
+            Request request = parser.parse(socketWrapper);
+            RequestProcessor requestProcessor = ProcessorFactory.getProcessor();
+            requestProcessor.process(request, response);
+
             ResponseBuilder builder = new ResponseBuilder();
             builder.build(socketWrapper.getResponseOutputQueue());
 

@@ -1,6 +1,7 @@
 package com.server.transport;
 
-import com.server.protocol.Protocols;
+import com.server.protocol.Protocol;
+import com.server.protocol.RequestProcessor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -8,12 +9,12 @@ import java.util.Map;
 
 public class ProcessorFactory {
 
-    private static final Map<Protocols, String> protocols = Map.of(Protocols.HTTP, "com.server.protocol.http.HttpProcessor");
+    private static final Map<Protocol, String> protocols = Map.of(Protocol.HTTP, "com.server.protocol.http.HttpRequestProcessor");
 
 
-    public static SocketProcessor create(SocketWrapper socketWrapper, Poller poller) {
+    public static RequestProcessor getProcessor() {
 
-        Protocols protocol = ServerConfig.get(ServerConfig.SERVER_PROTOCOL);
+        Protocol protocol = ServerConfig.get(ServerConfig.SERVER_PROTOCOL);
         if (protocol == null) {
             throw new RuntimeException("Protocol Not Found");
         }
@@ -26,9 +27,9 @@ public class ProcessorFactory {
         try {
             Class<?> clazz = Class.forName(className);
 
-            Constructor<?> constructor = clazz.getConstructor(SocketWrapper.class, Poller.class);
+            Constructor<?> constructor = clazz.getConstructor();
 
-            return (SocketProcessor) constructor.newInstance(socketWrapper, poller);
+            return (RequestProcessor) constructor.newInstance();
 
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException e) {

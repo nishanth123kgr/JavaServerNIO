@@ -72,7 +72,7 @@ public class Poller implements Runnable {
                     if (key.isReadable()) {
                         wrapper.setKey(key);
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
-                        SocketProcessor socketProcessor = ProcessorFactory.create(wrapper, this);
+                        SocketProcessor socketProcessor = new SocketProcessor(wrapper, this);
                         server.getExecutor().submit(socketProcessor);
                     }
 

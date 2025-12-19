@@ -1,6 +1,6 @@
 package com.server.protocol;
 
-public enum Protocols {
+public enum Protocol {
 
     HTTP, KAFKA;
 }

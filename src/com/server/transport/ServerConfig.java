@@ -1,6 +1,6 @@
 package com.server.transport;
 
-import com.server.protocol.Protocols;
+import com.server.protocol.Protocol;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -19,7 +19,7 @@ public class ServerConfig {
     public static final String SERVER_PROTOCOL = "server.protocol";
 
 
-    private static final Map<String, ConfigKey> SCHEMA = Map.of(SERVER_PORT, new ConfigKey(SERVER_PORT, ConfigType.INT, 8080, true), SERVER_PROTOCOL, new ConfigKey(SERVER_PROTOCOL, ConfigType.PROTOCOL, Protocols.HTTP, true));
+    private static final Map<String, ConfigKey> SCHEMA = Map.of(SERVER_PORT, new ConfigKey(SERVER_PORT, ConfigType.INT, 8080, true), SERVER_PROTOCOL, new ConfigKey(SERVER_PROTOCOL, ConfigType.PROTOCOL, Protocol.HTTP, true));
 
     private static Object parseValue(String value, ConfigType type) {
         return switch (type) {
@@ -27,7 +27,7 @@ public class ServerConfig {
             case INT -> Integer.parseInt(value);
             case LONG -> Long.parseLong(value);
             case BOOLEAN -> Boolean.parseBoolean(value);
-            case PROTOCOL -> Protocols.valueOf(value.toUpperCase());
+            case PROTOCOL -> Protocol.valueOf(value.toUpperCase());
         };
     }
 
